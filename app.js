@@ -8,7 +8,7 @@ const INITIAL_BOOKS = [
     author: "Fabio Geda",
     publishYear: "2010",
     category: "Scolastici & Narrativa",
-    coverUrl: "https://covers.openlibrary.org/b/id/10528242-L.jpg",
+    coverUrl: "covers/geda.jpg",
     summaryLength: "deep",
     summary2m: `La storia vera di Enaiatollah Akbari, bambino afghano di etnia Hazara perseguitato dai Talebani. Dopo la morte del padre, la madre lo porta clandestinamente a Quetta in Pakistan e lo lascia solo a 10 anni per sottrarlo alla schiavitù, facendogli promettere di non rubare, non drogarsi e non usare armi. Attraverso Pakistan, Iran, Turchia e Grecia, Enaiatollah affronta anni di lavoro minorile, percosse, marce sui ghiacciai e un naufragio in mare, fino ad arrivare a Torino nascosto sotto un camion, dove viene accolto da una famiglia affidataria e trova il suo riscatto.`,
     summary5m: `Enaiatollah Akbari fugge all'inizio del 2000 da Nava (Ghazni) per scampare ai Talebani e alle pretese di un creditore Pashtun che lo voleva come servo dopo la morte del padre. Abbandonato dalla madre a Quetta per salvarlo, impara a sopravvivere da solo a dieci anni lavorando in botteghe e mercati.
@@ -83,7 +83,7 @@ Nel porto di Patrasso Enaiatollah trascorre settimane a studiare i movimenti del
     author: "Italo Calvino",
     publishYear: "1979",
     category: "I tuoi Classici",
-    coverUrl: "https://covers.openlibrary.org/b/id/1007668-L.jpg",
+    coverUrl: "covers/calvino.jpg",
     summaryLength: "deep",
     summary2m: `Un lettore acquista un libro difettoso e torna in libreria dove incontra Ludmilla. I due si mettono sulle tracce della continuazione, ma ogni nuovo romanzo si interrompe a metà tra falsari e censure, dimostrando che il vero valore della lettura risiede nella gioia di ricominciare sempre da capo.`,
     summary5m: `Dall'errore di legatoria in libreria alla caccia tra falsari e traduzioni apocrife: la vicenda segue il Lettore e Ludmilla alle prese con dieci incipit incompiuti, fino all'approdo in una biblioteca e al matrimonio finale, a celebrare il legame complice tra lettori e storie.`,
@@ -149,7 +149,7 @@ L'inseguimento dei manoscritti spinge il protagonista a viaggiare in vari paesi 
     author: "George Orwell",
     publishYear: "1949",
     category: "I tuoi Classici",
-    coverUrl: "https://covers.openlibrary.org/b/id/12054527-L.jpg",
+    coverUrl: "covers/orwell.jpg",
     summaryLength: "deep",
     summary2m: `Winston Smith lavora modificando la storia per il Partito di Oceania, ma decide di ribellarsi scrivendo un diario e legandosi a Julia. Traditi da O'Brien, i due vengono arrestati e torturati fino alla Stanza 101, dove Winston capitola moralmente tradendo Julia e sottomettendosi al Grande Fratello.`,
     summary5m: `Dalla Londra soffocata dai teleschermi all'arresto nella bottega di antiquariato: la vicenda di Winston Smith ripercorre il tentativo di preservare la memoria storica contro la Neolingua e la propaganda, fino alla spietata rieducazione al Ministero dell'Amore.`,
@@ -215,7 +215,7 @@ L'illusione dura poco: dietro un quadro della stanza si nasconde un teleschermo 
     author: "Yuval Noah Harari",
     publishYear: "2011",
     category: "Saggistica",
-    coverUrl: "https://covers.openlibrary.org/b/id/8301552-L.jpg",
+    coverUrl: "covers/harari.jpg",
     summaryLength: "standard",
     summary2m: `I Sapiens si sono imposti sul pianeta grazie alla capacità di inventare e condividere miti astratti come denaro, leggi e religioni. L'agricoltura ha aumentato la popolazione ma peggiorato le condizioni del singolo, fino alla rivoluzione scientifica che ha inaugurato l'era moderna.`,
     summary5m: `Dalla savana africana alla conquista del globo attraverso tre tappe: la rivoluzione cognitiva che crea cooperazione flessibile tra sconosciuti, la rivoluzione agricola che lega l'uomo ai campi creando disuguaglianze, e la rivoluzione scientifica fondata sull'ammissione di ignoranza e sull'innovazione tecnica.`,
@@ -274,12 +274,12 @@ Negli ultimi cinque secoli la conoscenza compie un salto senza precedenti grazie
   },
   {
     id: "seed-clear-2018",
-    isbn: "9788856667509",
+    isbn: "9788851172411",
     title: "Piccole abitudini per grandi cambiamenti",
     author: "James Clear",
     publishYear: "2018",
     category: "Saggistica",
-    coverUrl: "https://covers.openlibrary.org/b/id/12843452-L.jpg",
+    coverUrl: "covers/clear.jpg",
     summaryLength: "fast",
     summary2m: `Il raggiungimento di risultati duraturi non dipende da eccezionali sforzi di volontà, ma dalla costanza con cui si ripetono piccole azioni quotidiane. Migliorando dell'uno per cento al giorno, l'effetto composto trasforma la propria identità nel tempo.`,
     summary5m: `Un'analisi dei meccanismi che regolano le abitudini: l'errore di puntare solo agli obiettivi invece che ai sistemi, il circuito formato da segnale, desiderio, risposta e ricompensa, e l'importanza di progettare l'ambiente per rendere facili le buone routine e difficili quelle dannose.`,
@@ -369,12 +369,45 @@ function initZXing() {
 }
 
 function loadBooks() {
-  const saved = localStorage.getItem("bookflix_gfire_library_v4");
-  if (saved) {
+  const currentKey = "bookflix_gfire_library_v5";
+  const legacyKeys = [
+    "bookflix_gfire_library_v4",
+    "bookflix_gfire_library_v3",
+    "bookflix_gfire_library_v2",
+    "bookflix_gfire_library"
+  ];
+
+  let raw = localStorage.getItem(currentKey);
+  if (!raw) {
+    for (const oldKey of legacyKeys) {
+      const oldVal = localStorage.getItem(oldKey);
+      if (oldVal) {
+        raw = oldVal;
+        break;
+      }
+    }
+  }
+
+  if (raw) {
     try {
-      const parsed = JSON.parse(saved);
+      const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        books = parsed;
+        // Sanificazione e aggiornamento automatico copertine:
+        // Se un libro è uno dei 5 classici o ha un vecchio ID OpenLibrary errato, sostituiscilo con la copertina corretta
+        books = parsed.map(b => {
+          const correctCover = resolveBookCover(b);
+          const needsFix = !b.coverUrl || 
+            b.coverUrl.includes("10528242") || 
+            b.coverUrl.includes("8301552") || 
+            b.coverUrl.includes("12843452") || 
+            b.coverUrl.includes("1007668") ||
+            correctCover.startsWith("covers/");
+          if (needsFix) {
+            return { ...b, coverUrl: correctCover };
+          }
+          return b;
+        });
+        saveBooks();
       } else {
         books = INITIAL_BOOKS;
         saveBooks();
@@ -390,7 +423,7 @@ function loadBooks() {
 }
 
 function saveBooks() {
-  localStorage.setItem("bookflix_gfire_library_v4", JSON.stringify(books));
+  localStorage.setItem("bookflix_gfire_library_v5", JSON.stringify(books));
 }
 
 // RENDERING CATEGORIES
@@ -499,7 +532,7 @@ function createShelfHtml(title, bookList) {
         ${bookList.map(b => `
           <div class="book-poster" data-id="${b.id}">
             <div class="poster-box">
-              <img class="poster-img" src="${resolveBookCover(b)}" alt="${b.title}" data-id="${b.id}" onerror="window.handleCoverError(this)">
+              <img class="poster-img" src="${resolveBookCover(b)}" alt="${b.title}" data-id="${b.id}" data-title="${encodeURIComponent(b.title)}" data-author="${encodeURIComponent(b.author)}" onerror="window.handleCoverError(this)" onload="window.handleCoverLoad(this)">
               <div class="poster-fallback" style="display:none;">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <div class="poster-fallback-title">${b.title}</div>
@@ -694,47 +727,69 @@ function generateDynamicBookCover(title, author, category) {
 function resolveBookCover(book) {
   if (!book) return generateDynamicBookCover("Libro", "Autore");
   
-  const cleanTitle = (book.title || "").toLowerCase().trim();
-  const isActuallyCalvino = cleanTitle.includes("inverno") || cleanTitle.includes("calvino") || (book.author || "").toLowerCase().includes("calvino");
-  // Se la copertina attuale è il placeholder errato di Calvino e il libro non è Calvino, la scartiamo
-  if (book.coverUrl && (!book.coverUrl.includes("1007668") || isActuallyCalvino)) {
-    return book.coverUrl;
+  const title = (book.title || "").toLowerCase().trim();
+  const author = (book.author || "").toLowerCase().trim();
+  const isbn = (book.isbn || "").replace(/[^0-9X]/gi, "");
+
+  // 1. Libri base predefiniti: usa sempre le copertine locali ufficiali ad alta risoluzione
+  if (title.includes("coccodrilli") || title.includes("geda") || title.includes("enaiat") || isbn === "9788868369323") {
+    return "covers/geda.jpg";
+  }
+  if (title.includes("viaggiatore") || (title.includes("calvino") && title.includes("inverno")) || isbn === "9788804739500" || isbn === "9788804668381") {
+    return "covers/calvino.jpg";
+  }
+  if (title === "1984" || title.includes("1984") || (author.includes("orwell") && title.includes("1984")) || isbn === "9788804668237" || isbn === "9788804719137") {
+    return "covers/orwell.jpg";
+  }
+  if (title.includes("sapiens") || title.includes("animali a d") || author.includes("harari") || isbn === "9788845292798" || isbn === "9788845296499") {
+    return "covers/harari.jpg";
+  }
+  if (title.includes("abitudini") || title.includes("atomic habits") || author.includes("clear") || isbn === "9788851172411" || isbn === "9791221208870" || isbn === "9788856667509") {
+    return "covers/clear.jpg";
   }
 
-  // 1. Verifica se è uno dei libri noti o già seedati
-  const cleanIsbn = (book.isbn || "").replace(/[^0-9X]/gi, "");
-  const seed = INITIAL_BOOKS.find(b => {
-    const sIsbn = (b.isbn || "").replace(/[^0-9X]/gi, "");
-    const sTitle = (b.title || "").toLowerCase().trim();
-    return (cleanIsbn && sIsbn === cleanIsbn) || (cleanTitle && sTitle === cleanTitle);
-  });
-
-  if (seed && seed.coverUrl) {
-    return seed.coverUrl;
+  // 2. Se ha un coverUrl valido che non sia uno dei placeholder Open Library noti errati (Alice, Zeke Masters, ecc.)
+  const badPatterns = ["1007668", "10528242", "8301552", "12843452"];
+  if (book.coverUrl && typeof book.coverUrl === 'string' && book.coverUrl.trim().length > 0) {
+    const isBad = badPatterns.some(p => book.coverUrl.includes(p));
+    if (!isBad) {
+      let safeUrl = book.coverUrl.replace(/^http:\/\//i, "https://");
+      if (safeUrl.includes("covers.openlibrary.org") && !safeUrl.includes("default=false")) {
+        safeUrl += (safeUrl.includes("?") ? "&" : "?") + "default=false";
+      }
+      return safeUrl;
+    }
   }
 
-  // 2. Se abbiamo un ISBN valido a 10 o 13 cifre, usa Open Library ISBN diretto
-  if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
-    return `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
+  // 3. Se abbiamo un ISBN valido a 10 o 13 cifre, usa Open Library con default=false (ritorna 404 invece di pixel trasparente)
+  if (isbn.length === 10 || isbn.length === 13) {
+    return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
   }
 
-  // 3. Fallback dinamico generato con titolo e autore reale
+  // 4. Fallback dinamico SVG generato fedelmente con titolo, autore e categoria reali
   return generateDynamicBookCover(book.title, book.author, book.category);
 }
 
 // GESTORE GLOBALE DI ERRORE CARICAMENTO IMMAGINI COPERTINA
 window.handleCoverError = function(img) {
   img.onerror = null;
-  if (img.dataset.id && Array.isArray(books)) {
-    const b = books.find(x => x.id === img.dataset.id);
-    if (b) {
-      img.src = generateDynamicBookCover(b.title, b.author, b.category);
-      return;
-    }
+  img.onload = null;
+  const bookId = img.dataset.id;
+  let b = null;
+  if (bookId && Array.isArray(books)) {
+    b = books.find(x => x.id === bookId);
   }
-  const title = img.dataset.title ? decodeURIComponent(img.dataset.title) : (img.alt || "Libro");
-  const author = img.dataset.author ? decodeURIComponent(img.dataset.author) : "Autore";
-  img.src = generateDynamicBookCover(title, author, "Narrativa");
+  const title = b ? b.title : (img.dataset.title ? decodeURIComponent(img.dataset.title) : (img.alt || "Libro"));
+  const author = b ? b.author : (img.dataset.author ? decodeURIComponent(img.dataset.author) : "Autore");
+  const cat = b ? b.category : "Narrativa";
+  img.src = generateDynamicBookCover(title, author, cat);
+};
+
+// Se il provider di copertine ritorna un pixel vuoto trasparente di 43 byte (es. 1x1 o 2x2), intercettalo
+window.handleCoverLoad = function(img) {
+  if (img.naturalWidth <= 2 || img.naturalHeight <= 2) {
+    window.handleCoverError(img);
+  }
 };
 
 // ESTRAZIONE COPERTINA AD ALTA RISOLUZIONE DA GOOGLE BOOKS
@@ -1518,22 +1573,31 @@ async function searchBookOnline(query) {
   const isIsbn = (numericOnly.length === 10 || numericOnly.length === 13);
   let results = [];
 
-  // Se è un ISBN già presente nella libreria di base, usalo direttamente per massima fedeltà
-  if (isIsbn) {
-    const seed = INITIAL_BOOKS.find(b => (b.isbn || "").replace(/[^0-9X]/gi, "") === numericOnly);
-    if (seed) {
-      return [{
-        title: seed.title,
-        author: seed.author,
-        publishYear: seed.publishYear,
-        category: seed.category,
-        coverUrl: seed.coverUrl,
-        isbn: seed.isbn
-      }];
-    }
+  // Se è uno dei 5 libri predefiniti (per titolo o ISBN), restituiscilo direttamente con copertina ufficiale
+  const cleanLower = clean.toLowerCase();
+  const seed = INITIAL_BOOKS.find(b => {
+    const bIsbn = (b.isbn || "").replace(/[^0-9X]/gi, "");
+    const bTitle = (b.title || "").toLowerCase();
+    return (isIsbn && bIsbn === numericOnly) || 
+           (cleanLower.includes("coccodrilli") && bTitle.includes("coccodrilli")) ||
+           (cleanLower.includes("viaggiatore") && bTitle.includes("viaggiatore")) ||
+           (cleanLower.includes("1984") && bTitle.includes("1984")) ||
+           (cleanLower.includes("sapiens") && bTitle.includes("sapiens")) ||
+           ((cleanLower.includes("abitudini") || cleanLower.includes("atomic habits")) && bTitle.includes("abitudini"));
+  });
+
+  if (seed) {
+    return [{
+      title: seed.title,
+      author: seed.author,
+      publishYear: seed.publishYear,
+      category: seed.category,
+      coverUrl: seed.coverUrl,
+      isbn: seed.isbn
+    }];
   }
 
-  // 1. Google Books API (Molto più accurato per ISBN italiani ed edizioni reali)
+  // 1. Google Books API (con https e parametri di qualità per edizioni reali)
   try {
     const gbUrl = isIsbn 
       ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${numericOnly}`
@@ -1546,7 +1610,7 @@ async function searchBookOnline(query) {
           const info = item.volumeInfo || {};
           let cover = extractGoogleBooksCover(info.imageLinks);
           if (!cover && isIsbn) {
-            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg`;
+            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg?default=false`;
           }
           if (!cover) {
             cover = generateDynamicBookCover(info.title, info.authors?.join(", "), info.categories ? info.categories[0] : "Narrativa");
@@ -1566,7 +1630,7 @@ async function searchBookOnline(query) {
     }
   } catch (_) {}
 
-  // 2. Open Library Search
+  // 2. Open Library Search (con default=false per non avere il pixel bianco)
   try {
     const searchUrl = isIsbn 
       ? `https://openlibrary.org/search.json?isbn=${numericOnly}&limit=5`
@@ -1578,11 +1642,11 @@ async function searchBookOnline(query) {
         sData.docs.forEach(doc => {
           let cover = null;
           if (doc.cover_i) {
-            cover = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
+            cover = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg?default=false`;
           } else if (doc.isbn && doc.isbn[0]) {
-            cover = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg`;
+            cover = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg?default=false`;
           } else if (isIsbn) {
-            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg`;
+            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg?default=false`;
           } else {
             cover = generateDynamicBookCover(doc.title, doc.author_name ? doc.author_name.join(", ") : "Autore");
           }
@@ -1635,7 +1699,7 @@ async function lookupIsbnDirectly(isbn) {
       author: "Autore",
       publishYear: "2024",
       category: "I tuoi Classici",
-      coverUrl: `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`,
+      coverUrl: `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg?default=false`,
       isbn: cleanIsbn
     });
   } else {
@@ -1657,7 +1721,13 @@ function showAiPreview(item) {
   const previewCover = document.getElementById("preview-cover");
   previewCover.onerror = function() {
     previewCover.onerror = null;
+    previewCover.onload = null;
     previewCover.src = generateDynamicBookCover(pendingMetadata.title, pendingMetadata.author, pendingMetadata.category);
+  };
+  previewCover.onload = function() {
+    if (previewCover.naturalWidth <= 2 || previewCover.naturalHeight <= 2) {
+      previewCover.src = generateDynamicBookCover(pendingMetadata.title, pendingMetadata.author, pendingMetadata.category);
+    }
   };
   previewCover.src = pendingMetadata.coverUrl;
 
