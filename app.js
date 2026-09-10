@@ -345,14 +345,20 @@ let pendingMetadata = null;
 let cameraStream = null;
 let zxingCodeReader = null;
 
-// INIT
-document.addEventListener("DOMContentLoaded", () => {
+// INIT ROBUSTO (FUNZIONA SUBITO ANCHE SU VERCEL E STANDALONE PWA)
+function initApp() {
   loadBooks();
   renderCategories();
   renderHome();
   setupEventListeners();
   initZXing();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
 
 function initZXing() {
   if (typeof ZXing !== 'undefined') {
@@ -366,9 +372,16 @@ function loadBooks() {
   const saved = localStorage.getItem("bookflix_gfire_library_v4");
   if (saved) {
     try {
-      books = JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        books = parsed;
+      } else {
+        books = INITIAL_BOOKS;
+        saveBooks();
+      }
     } catch (_) {
       books = INITIAL_BOOKS;
+      saveBooks();
     }
   } else {
     books = INITIAL_BOOKS;
@@ -486,7 +499,7 @@ function createShelfHtml(title, bookList) {
         ${bookList.map(b => `
           <div class="book-poster" data-id="${b.id}">
             <div class="poster-box">
-              <img class="poster-img" src="${resolveBookCover(b)}" alt="${b.title}" onerror="window.handleCoverError(this, '${(b.title || '').replace(/'/g, "\\'")}', '${(b.author || '').replace(/'/g, "\\'")}', '${(b.category || '').replace(/'/g, "\\\'")}');">
+              <img class="poster-img" src="${resolveBookCover(b)}" alt="${b.title}" data-id="${b.id}" onerror="window.handleCoverError(this)">
               <div class="poster-fallback" style="display:none;">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <div class="poster-fallback-title">${b.title}</div>
@@ -690,7 +703,6 @@ function resolveBookCover(book) {
 
   // 1. Verifica se è uno dei libri noti o già seedati
   const cleanIsbn = (book.isbn || "").replace(/[^0-9X]/gi, "");
-  const cleanTitle = (book.title || "").toLowerCase().trim();
   const seed = INITIAL_BOOKS.find(b => {
     const sIsbn = (b.isbn || "").replace(/[^0-9X]/gi, "");
     const sTitle = (b.title || "").toLowerCase().trim();
@@ -711,9 +723,18 @@ function resolveBookCover(book) {
 }
 
 // GESTORE GLOBALE DI ERRORE CARICAMENTO IMMAGINI COPERTINA
-window.handleCoverError = function(img, title, author, category) {
+window.handleCoverError = function(img) {
   img.onerror = null;
-  img.src = generateDynamicBookCover(title, author, category);
+  if (img.dataset.id && Array.isArray(books)) {
+    const b = books.find(x => x.id === img.dataset.id);
+    if (b) {
+      img.src = generateDynamicBookCover(b.title, b.author, b.category);
+      return;
+    }
+  }
+  const title = img.dataset.title ? decodeURIComponent(img.dataset.title) : (img.alt || "Libro");
+  const author = img.dataset.author ? decodeURIComponent(img.dataset.author) : "Autore";
+  img.src = generateDynamicBookCover(title, author, "Narrativa");
 };
 
 // ESTRAZIONE COPERTINA AD ALTA RISOLUZIONE DA GOOGLE BOOKS
@@ -1327,7 +1348,7 @@ function setupEventListeners() {
     if (results && results.length > 0) {
       resultsContainer.innerHTML = results.map((book, idx) => `
         <div class="search-item" data-idx="${idx}">
-          <img src="${book.coverUrl || resolveBookCover(book)}" alt="${book.title}" onerror="window.handleCoverError(this, '${(book.title || '').replace(/'/g, "\\'")}', '${(book.author || '').replace(/'/g, "\\'")}', '${(book.category || '').replace(/'/g, "\\\'")}');">
+          <img src="${book.coverUrl || resolveBookCover(book)}" alt="${book.title}" data-title="${encodeURIComponent(book.title || '')}" data-author="${encodeURIComponent(book.author || '')}" onerror="window.handleCoverError(this)">
           <div class="search-item-info">
             <h5>${book.title}</h5>
             <p>${book.author} • ${book.publishYear}</p>
