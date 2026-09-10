@@ -486,7 +486,7 @@ function createShelfHtml(title, bookList) {
         ${bookList.map(b => `
           <div class="book-poster" data-id="${b.id}">
             <div class="poster-box">
-              <img class="poster-img" src="${b.coverUrl}" alt="${b.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <img class="poster-img" src="${resolveBookCover(b)}" alt="${b.title}" onerror="window.handleCoverError(this, '${(b.title || '').replace(/'/g, "\\'")}', '${(b.author || '').replace(/'/g, "\\'")}', '${(b.category || '').replace(/'/g, "\\\'")}');">
               <div class="poster-fallback" style="display:none;">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <div class="poster-fallback-title">${b.title}</div>
@@ -622,12 +622,153 @@ function buildNotionMarkdown(book) {
   return md;
 }
 
+
+// GENERATORE DINAMICO COPERTINE SVG (QUANDO NON DISPONIBILE ONLINE - MAI COPERTINE ERRATE!)
+function generateDynamicBookCover(title, author, category) {
+  const safeTitle = (title || "Libro").replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const safeAuthor = (author || "Autore").replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const safeCat = (category || "NARRATIVA").toUpperCase().replace(/&/g, '&amp;');
+
+  let hash = 0;
+  for (let i = 0; i < (title || "").length; i++) hash = title.charCodeAt(i) + ((hash << 5) - hash);
+  const palettes = [
+    { bg1: '#1a0505', bg2: '#38090d', accent: '#E50914', ribbon: '#E5A93C' },
+    { bg1: '#071526', bg2: '#0d2847', accent: '#3B82F6', ribbon: '#60A5FA' },
+    { bg1: '#141005', bg2: '#2b1f07', accent: '#E5A93C', ribbon: '#FCD34D' },
+    { bg1: '#061a10', bg2: '#0c3320', accent: '#22C55E', ribbon: '#4ADE80' },
+    { bg1: '#12071f', bg2: '#240d3d', accent: '#8B5CF6', ribbon: '#A78BFA' }
+  ];
+  const p = palettes[Math.abs(hash) % palettes.length];
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+    <defs>
+      <linearGradient id="bg_${Math.abs(hash)}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${p.bg1}"/>
+        <stop offset="50%" stop-color="${p.bg2}"/>
+        <stop offset="100%" stop-color="#0a0a0a"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="900" fill="url(#bg_${Math.abs(hash)})"/>
+    <rect x="25" y="25" width="550" height="850" fill="none" stroke="${p.accent}" stroke-width="2" rx="14" stroke-opacity="0.45"/>
+    <rect x="35" y="35" width="530" height="830" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" rx="10"/>
+    
+    <rect x="190" y="60" width="220" height="30" rx="5" fill="rgba(0,0,0,0.6)" stroke="${p.accent}" stroke-width="1"/>
+    <text x="300" y="80" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="900" fill="${p.ribbon}" text-anchor="middle" letter-spacing="2">BOOKFLIX • GFIRE</text>
+    
+    <g transform="translate(265, 175) scale(1.6)">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="${p.accent}" stroke-width="2" fill="none"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="${p.accent}" stroke-width="2" fill="none"/>
+    </g>
+
+    <text x="300" y="325" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="800" fill="${p.ribbon}" text-anchor="middle" letter-spacing="2.5">${safeCat}</text>
+    
+    <foreignObject x="45" y="355" width="510" height="300">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex; align-items:center; justify-content:center; height:100%; text-align:center; padding:0 15px;">
+        <h1 style="color:#ffffff; font-family:'Bebas Neue', Impact, -apple-system, sans-serif; font-size:46px; line-height:1.05; margin:0; text-transform:uppercase; letter-spacing:1px; text-shadow:0 4px 20px rgba(0,0,0,0.9);">${safeTitle}</h1>
+      </div>
+    </foreignObject>
+    
+    <line x1="200" y1="695" x2="400" y2="695" stroke="${p.accent}" stroke-width="2" stroke-opacity="0.6"/>
+    
+    <text x="300" y="740" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="700" fill="#E8E8E8" text-anchor="middle" letter-spacing="0.5">${safeAuthor}</text>
+    <text x="300" y="775" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600" fill="rgba(255,255,255,0.45)" text-anchor="middle" letter-spacing="1.5">EDIZIONE DIGITALE BOOKFLIX</text>
+  </svg>`;
+
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+// RISOLUZIONE ACCURATA COPERTINE (MAI COPERTINE DI ALTRI LIBRI)
+function resolveBookCover(book) {
+  if (!book) return generateDynamicBookCover("Libro", "Autore");
+  
+  const cleanTitle = (book.title || "").toLowerCase().trim();
+  const isActuallyCalvino = cleanTitle.includes("inverno") || cleanTitle.includes("calvino") || (book.author || "").toLowerCase().includes("calvino");
+  // Se la copertina attuale è il placeholder errato di Calvino e il libro non è Calvino, la scartiamo
+  if (book.coverUrl && (!book.coverUrl.includes("1007668") || isActuallyCalvino)) {
+    return book.coverUrl;
+  }
+
+  // 1. Verifica se è uno dei libri noti o già seedati
+  const cleanIsbn = (book.isbn || "").replace(/[^0-9X]/gi, "");
+  const cleanTitle = (book.title || "").toLowerCase().trim();
+  const seed = INITIAL_BOOKS.find(b => {
+    const sIsbn = (b.isbn || "").replace(/[^0-9X]/gi, "");
+    const sTitle = (b.title || "").toLowerCase().trim();
+    return (cleanIsbn && sIsbn === cleanIsbn) || (cleanTitle && sTitle === cleanTitle);
+  });
+
+  if (seed && seed.coverUrl) {
+    return seed.coverUrl;
+  }
+
+  // 2. Se abbiamo un ISBN valido a 10 o 13 cifre, usa Open Library ISBN diretto
+  if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
+    return `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
+  }
+
+  // 3. Fallback dinamico generato con titolo e autore reale
+  return generateDynamicBookCover(book.title, book.author, book.category);
+}
+
+// GESTORE GLOBALE DI ERRORE CARICAMENTO IMMAGINI COPERTINA
+window.handleCoverError = function(img, title, author, category) {
+  img.onerror = null;
+  img.src = generateDynamicBookCover(title, author, category);
+};
+
+// ESTRAZIONE COPERTINA AD ALTA RISOLUZIONE DA GOOGLE BOOKS
+function extractGoogleBooksCover(imageLinks) {
+  if (!imageLinks) return null;
+  let url = imageLinks.extraLarge || imageLinks.large || imageLinks.medium || imageLinks.small || imageLinks.thumbnail;
+  if (!url) return null;
+  url = url.replace(/^http:\/\//i, 'https://');
+  url = url.replace('&edge=curl', '');
+  return url;
+}
+
+// CHIUSURA TOTALE MODALI E RIPRISTINO OVERLAY
+function closeAllModalsAndDetail() {
+  const detailModal = document.getElementById("detail-modal");
+  if (detailModal) {
+    detailModal.classList.remove("open");
+  }
+
+  // Chiudi tutti i bottom-sheet modal e rimuovi scrim attivi
+  const allModals = ["scanner-modal", "share-modal", "notion-modal", "settings-modal"];
+  allModals.forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.classList.remove("open");
+  });
+
+  // Ferma streaming fotocamera se attivo
+  stopLiveVideo();
+
+  // Ripristina lo scroll su body e app
+  document.body.style.overflow = "";
+  document.documentElement.style.overflow = "";
+  const app = document.getElementById("app");
+  if (app) app.style.pointerEvents = "";
+
+  // Renderizza la home per mantenere sincronizzato lo stato
+  renderHome();
+}
+
 // DETAIL SCREEN & 4 TABS
 function openDetail(book, initialTab = "tab-summary") {
+  // Chiudi preventivamente qualsiasi bottom-sheet rimasto attivo
+  const allModals = ["scanner-modal", "share-modal", "notion-modal", "settings-modal"];
+  allModals.forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.classList.remove("open");
+  });
+  stopLiveVideo();
+
   currentBook = book;
   currentCardIndex = 0;
 
-  document.getElementById("detail-cover-bg").style.backgroundImage = `url('${book.coverUrl}')`;
+  // Risolvi copertina garantendo che non sia generica o di altri libri
+  const safeCover = resolveBookCover(book);
+  document.getElementById("detail-cover-bg").style.backgroundImage = `url('${safeCover}')`;
   document.getElementById("detail-title").textContent = book.title;
   document.getElementById("detail-author").textContent = `${book.author} • ${book.publishYear}`;
   document.getElementById("detail-isbn").textContent = book.isbn ? `ISBN: ${book.isbn}` : "";
@@ -769,7 +910,14 @@ function openDetail(book, initialTab = "tab-summary") {
 
   // Attiva Tab
   switchTab(initialTab);
-  document.getElementById("detail-modal").classList.add("open");
+  const detailModal = document.getElementById("detail-modal");
+  detailModal.scrollTop = 0;
+  detailModal.classList.add("open");
+
+  // Push history state per supportare swipe indietro nativo su iOS
+  try {
+    window.history.pushState({ modal: "detail" }, "");
+  } catch (_) {}
 }
 
 function switchTab(tabId) {
@@ -799,9 +947,32 @@ function renderFlashcard() {
 
 // EVENT LISTENERS
 function setupEventListeners() {
-  document.getElementById("btn-detail-back").onclick = () => {
-    document.getElementById("detail-modal").classList.remove("open");
-  };
+  // CHIUSURA DETTAGLIO LIBRO CON RIPRISTINO OVERLAY
+  document.getElementById("btn-detail-back").onclick = closeAllModalsAndDetail;
+
+  const btnDetailCloseX = document.getElementById("btn-detail-close-x");
+  if (btnDetailCloseX) {
+    btnDetailCloseX.onclick = closeAllModalsAndDetail;
+  }
+
+  const btnDetailBottomClose = document.getElementById("btn-detail-bottom-close");
+  if (btnDetailBottomClose) {
+    btnDetailBottomClose.onclick = closeAllModalsAndDetail;
+  }
+
+  // Supporto tasto Escape e tasto Indietro del browser
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeAllModalsAndDetail();
+    }
+  });
+
+  window.addEventListener("popstate", () => {
+    const detailModal = document.getElementById("detail-modal");
+    if (detailModal && detailModal.classList.contains("open")) {
+      closeAllModalsAndDetail();
+    }
+  });
 
   document.querySelectorAll(".tabs-nav .tab-btn").forEach(btn => {
     btn.onclick = () => switchTab(btn.dataset.tab);
@@ -1048,8 +1219,7 @@ function setupEventListeners() {
     if (confirm(`Rimuovere "${currentBook.title}" dalla libreria?`)) {
       books = books.filter(b => b.id !== currentBook.id);
       saveBooks();
-      document.getElementById("detail-modal").classList.remove("open");
-      renderHome();
+      closeAllModalsAndDetail();
     }
   };
 
@@ -1157,7 +1327,7 @@ function setupEventListeners() {
     if (results && results.length > 0) {
       resultsContainer.innerHTML = results.map((book, idx) => `
         <div class="search-item" data-idx="${idx}">
-          <img src="${book.coverUrl}" alt="${book.title}" onerror="this.src='https://covers.openlibrary.org/b/id/1007668-L.jpg'">
+          <img src="${book.coverUrl || resolveBookCover(book)}" alt="${book.title}" onerror="window.handleCoverError(this, '${(book.title || '').replace(/'/g, "\\'")}', '${(book.author || '').replace(/'/g, "\\'")}', '${(book.category || '').replace(/'/g, "\\\'")}');">
           <div class="search-item-info">
             <h5>${book.title}</h5>
             <p>${book.author} • ${book.publishYear}</p>
@@ -1187,7 +1357,7 @@ function setupEventListeners() {
           author: "Autore da specificare",
           publishYear: "2024",
           category: "I tuoi Classici",
-          coverUrl: "https://covers.openlibrary.org/b/id/1007668-L.jpg",
+          coverUrl: generateDynamicBookCover(query, "Autore da specificare", "I tuoi Classici"),
           isbn: query.replace(/[^0-9X]/gi, "")
         });
       };
@@ -1320,60 +1490,93 @@ function stopLiveVideo() {
   }
 }
 
-// RICERCA MULTI-FONTE
+// RICERCA MULTI-FONTE CON PRIORITÀ GOOGLE BOOKS & RECUPERO COPERTINE ACCURATO
 async function searchBookOnline(query) {
   const clean = query.trim();
   const numericOnly = clean.replace(/[^0-9X]/gi, "");
   const isIsbn = (numericOnly.length === 10 || numericOnly.length === 13);
   let results = [];
 
-  // Open Library Search
-  try {
-    const searchUrl = isIsbn 
-      ? `https://openlibrary.org/search.json?isbn=${numericOnly}&limit=5`
-      : `https://openlibrary.org/search.json?q=${encodeURIComponent(clean)}&limit=6`;
-    const sRes = await fetch(searchUrl);
-    const sData = await sRes.json();
-    if (sData.docs && sData.docs.length > 0) {
-      sData.docs.forEach(doc => {
-        const cover = doc.cover_i 
-          ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-          : (doc.isbn ? `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg` : "https://covers.openlibrary.org/b/id/1007668-L.jpg");
-        const author = doc.author_name ? doc.author_name.join(", ") : "Autore sconosciuto";
-        const year = doc.first_publish_year || (doc.publish_year ? doc.publish_year[0] : "N/D");
-        const isbn = doc.isbn ? doc.isbn[0] : (isIsbn ? numericOnly : "");
-        const category = doc.subject ? doc.subject[0] : "I tuoi Classici";
-        results.push({
-          title: doc.title,
-          author: author,
-          publishYear: String(year),
-          category: category,
-          coverUrl: cover,
-          isbn: isbn
-        });
-      });
-      return results;
+  // Se è un ISBN già presente nella libreria di base, usalo direttamente per massima fedeltà
+  if (isIsbn) {
+    const seed = INITIAL_BOOKS.find(b => (b.isbn || "").replace(/[^0-9X]/gi, "") === numericOnly);
+    if (seed) {
+      return [{
+        title: seed.title,
+        author: seed.author,
+        publishYear: seed.publishYear,
+        category: seed.category,
+        coverUrl: seed.coverUrl,
+        isbn: seed.isbn
+      }];
     }
-  } catch (_) {}
+  }
 
-  // Google Books Fallback
+  // 1. Google Books API (Molto più accurato per ISBN italiani ed edizioni reali)
   try {
     const gbUrl = isIsbn 
       ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${numericOnly}`
-      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(clean)}&maxResults=5`;
+      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(clean)}&maxResults=6`;
     const gbRes = await fetch(gbUrl);
     if (gbRes.ok) {
       const gbData = await gbRes.json();
       if (gbData.items && gbData.items.length > 0) {
         gbData.items.forEach(item => {
-          const info = item.volumeInfo;
+          const info = item.volumeInfo || {};
+          let cover = extractGoogleBooksCover(info.imageLinks);
+          if (!cover && isIsbn) {
+            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg`;
+          }
+          if (!cover) {
+            cover = generateDynamicBookCover(info.title, info.authors?.join(", "), info.categories ? info.categories[0] : "Narrativa");
+          }
+
           results.push({
-            title: info.title,
-            author: info.authors?.join(", ") || "Autore sconosciuto",
+            title: info.title || "Titolo sconosciuto",
+            author: info.authors ? info.authors.join(", ") : "Autore sconosciuto",
             publishYear: (info.publishedDate || "").substring(0, 4) || "N/D",
             category: info.categories ? info.categories[0] : "Narrativa",
-            coverUrl: info.imageLinks?.thumbnail ? info.imageLinks.thumbnail.replace('http:', 'https:') : "https://covers.openlibrary.org/b/id/1007668-L.jpg",
-            isbn: info.industryIdentifiers ? info.industryIdentifiers[0]?.identifier : ""
+            coverUrl: cover,
+            isbn: info.industryIdentifiers ? info.industryIdentifiers[0]?.identifier : (isIsbn ? numericOnly : "")
+          });
+        });
+        if (results.length > 0) return results;
+      }
+    }
+  } catch (_) {}
+
+  // 2. Open Library Search
+  try {
+    const searchUrl = isIsbn 
+      ? `https://openlibrary.org/search.json?isbn=${numericOnly}&limit=5`
+      : `https://openlibrary.org/search.json?q=${encodeURIComponent(clean)}&limit=6`;
+    const sRes = await fetch(searchUrl);
+    if (sRes.ok) {
+      const sData = await sRes.json();
+      if (sData.docs && sData.docs.length > 0) {
+        sData.docs.forEach(doc => {
+          let cover = null;
+          if (doc.cover_i) {
+            cover = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
+          } else if (doc.isbn && doc.isbn[0]) {
+            cover = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg`;
+          } else if (isIsbn) {
+            cover = `https://covers.openlibrary.org/b/isbn/${numericOnly}-L.jpg`;
+          } else {
+            cover = generateDynamicBookCover(doc.title, doc.author_name ? doc.author_name.join(", ") : "Autore");
+          }
+
+          const author = doc.author_name ? doc.author_name.join(", ") : "Autore sconosciuto";
+          const year = doc.first_publish_year || (doc.publish_year ? doc.publish_year[0] : "N/D");
+          const isbn = doc.isbn ? doc.isbn[0] : (isIsbn ? numericOnly : "");
+          const category = doc.subject ? doc.subject[0] : "I tuoi Classici";
+          results.push({
+            title: doc.title,
+            author: author,
+            publishYear: String(year),
+            category: category,
+            coverUrl: cover,
+            isbn: isbn
           });
         });
         return results;
@@ -1389,43 +1592,54 @@ async function lookupIsbnDirectly(isbn) {
   const statusText = document.getElementById("camera-status-text");
   if (statusText) statusText.textContent = `Ricerca per ISBN: ${cleanIsbn}...`;
 
+  // 1. Controlla prima nei libri seed per risposta istantanea
+  const seed = INITIAL_BOOKS.find(b => (b.isbn || "").replace(/[^0-9X]/gi, "") === cleanIsbn);
+  if (seed) {
+    showAiPreview(seed);
+    return;
+  }
+
+  // 2. Ricerca online su Google Books / Open Library
   const results = await searchBookOnline(cleanIsbn);
   if (results && results.length > 0) {
     showAiPreview(results[0]);
-  } else {
-    const seed = INITIAL_BOOKS.find(b => b.isbn === cleanIsbn);
-    if (seed) {
-      showAiPreview(seed);
-      return;
-    }
+    return;
+  }
 
-    const manualTitle = prompt(`Codice ISBN: ${cleanIsbn}\nInserisci il titolo del libro:`, "");
-    if (manualTitle && manualTitle.trim()) {
-      showAiPreview({
-        title: manualTitle.trim(),
-        author: "Autore",
-        publishYear: "2024",
-        category: "I tuoi Classici",
-        coverUrl: `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`,
-        isbn: cleanIsbn
-      });
-    } else {
-      document.getElementById("btn-mode-search").click();
-    }
+  // 3. Fallback inserimento manuale
+  const manualTitle = prompt(`Codice ISBN: ${cleanIsbn}\nInserisci il titolo del libro:`, "");
+  if (manualTitle && manualTitle.trim()) {
+    showAiPreview({
+      title: manualTitle.trim(),
+      author: "Autore",
+      publishYear: "2024",
+      category: "I tuoi Classici",
+      coverUrl: `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`,
+      isbn: cleanIsbn
+    });
+  } else {
+    document.getElementById("btn-mode-search").click();
   }
 }
 
 function showAiPreview(item) {
+  const safeCover = resolveBookCover(item);
   pendingMetadata = {
     title: item.title,
     author: item.author || "Autore sconosciuto",
     publishYear: item.publishYear || "N/D",
     category: item.category || "I tuoi Classici",
-    coverUrl: item.coverUrl || "https://covers.openlibrary.org/b/id/1007668-L.jpg",
+    coverUrl: safeCover,
     isbn: item.isbn || ""
   };
 
-  document.getElementById("preview-cover").src = pendingMetadata.coverUrl;
+  const previewCover = document.getElementById("preview-cover");
+  previewCover.onerror = function() {
+    previewCover.onerror = null;
+    previewCover.src = generateDynamicBookCover(pendingMetadata.title, pendingMetadata.author, pendingMetadata.category);
+  };
+  previewCover.src = pendingMetadata.coverUrl;
+
   document.getElementById("preview-title").textContent = pendingMetadata.title;
   document.getElementById("preview-author").textContent = `${pendingMetadata.author} • ${pendingMetadata.publishYear}`;
   document.getElementById("preview-genre").textContent = pendingMetadata.category.toUpperCase();
