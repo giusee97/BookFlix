@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BookFlix by GFire</title>
+
+  <!-- Meta tag specifici per iPhone / iOS Web App (PWA) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BookFlix">
+  <meta name="theme-color" content="#0D0D0D">
+
+  <!-- Icone iOS & PWA Manifest -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Font Bebas Neue & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  <!-- ZXing Barcode Decoder per lettura ISBN -->
+  <script src="zxing.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Top Bar Netflix -->
+    <header class="top-nav">
+      <div class="brand">
+        <span class="logo">BOOKFLIX</span>
+        <span class="badge-gfire">BY GFIRE</span>
+      </div>
+      <div class="nav-actions">
+        <button class="icon-btn" id="btn-search-open" aria-label="Cerca">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="icon-btn" id="btn-settings-open" aria-label="Impostazioni">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Categorie Filtro Orizzontali -->
+    <nav class="categories-bar" id="categories-container"></nav>
+
+    <!-- Main Content con Hero Banner e Caroselli -->
+    <main class="home-scroll-view" id="home-view">
+      <!-- Hero Banner -->
+      <section class="hero-banner" id="hero-banner"></section>
+
+      <!-- Sezioni Carosello Netflix -->
+      <div id="shelves-container"></div>
+
+      <div class="bottom-spacer"></div>
+    </main>
+
+    <!-- Pulsante Flottante Scansiona Libro -->
+    <button class="fab-scanner" id="btn-fab-scan">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M3 17v2a2 2 0 0 0 2 2h2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>
+      <span>Scansiona nuovo libro</span>
+    </button>
+
+    <!-- MODAL 1: SCHEDA DETTAGLIO LIBRO (STILE NETFLIX CON 4 TAB) -->
+    <div class="screen-modal" id="detail-modal">
+      <div class="detail-header">
+        <button class="back-btn" id="btn-detail-back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button class="share-btn" id="btn-detail-share">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+        </button>
+      </div>
+
+      <div class="detail-hero-cover" id="detail-cover-bg">
+        <div class="detail-cover-gradient"></div>
+        <div class="detail-meta-box">
+          <div class="detail-badges">
+            <span class="category-badge" id="detail-category">NARRATIVA</span>
+            <span class="length-badge" id="detail-length">⚡ 2 min</span>
+          </div>
+          <h1 class="detail-title" id="detail-title">Titolo</h1>
+          <div class="detail-author" id="detail-author">Autore • Anno</div>
+          <div class="detail-isbn" id="detail-isbn">ISBN: ...</div>
+        </div>
+      </div>
+
+      <!-- Azioni Rapide -->
+      <div class="detail-quick-actions">
+        <button class="action-btn-primary" id="btn-read-summary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v16l14-8L5 4z"/></svg>
+          Leggi Riassunto
+        </button>
+        <button class="action-btn-secondary" id="btn-goto-flashcards">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Flashcard (<span id="flashcard-badge-count">5</span>)
+        </button>
+        <button class="action-btn-secondary" id="btn-quick-notion" style="border-color: var(--gold-accent); color: var(--gold-accent);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Importa su Notion
+        </button>
+        <button class="action-btn-icon" id="btn-export-options" title="Opzioni di Esportazione e PDF">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+
+      <!-- 5 TAB DI NAVIGAZIONE (Riassunto, Capitoli, Flashcard, Morale, Importa su Notion) -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="tab-summary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Riassunto
+        </button>
+        <button class="tab-btn" data-tab="tab-concepts">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Capitoli
+        </button>
+        <button class="tab-btn" data-tab="tab-flashcards">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Flashcard
+        </button>
+        <button class="tab-btn" data-tab="tab-moral">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Morale
+        </button>
+        <button class="tab-btn" data-tab="tab-notion" id="btn-tab-notion-nav">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Importa su Notion
+        </button>
+      </div>
+
+      <div class="tab-contents">
+        <!-- Tab 1: Riassunto -->
+        <div class="tab-pane active" id="tab-summary">
+          <div class="reading-time-pill" id="summary-reading-time">⏱ Tempo stimato: 2 min</div>
+          <div class="summary-register-tag" id="summary-register-badge">Registro Scolastico & Accademico</div>
+          <div class="summary-body" id="summary-text"></div>
+        </div>
+
+        <!-- Tab 2: Mappa Concettuale dei Capitoli -->
+        <div class="tab-pane" id="tab-concepts">
+          <div class="chapter-map-intro">
+            <h4>🗺 MAPPA CONCETTUALE DEI CAPITOLI</h4>
+            <p>Sviluppo sequenziale dell'opera, riassunto di ciascun capitolo e snodi logici di collegamento.</p>
+          </div>
+          <div id="concept-blocks-list"></div>
+        </div>
+
+        <!-- Tab 3: Flashcard 3D Interactive -->
+        <div class="tab-pane" id="tab-flashcards">
+          <div class="flashcard-status">
+            <span id="flashcard-counter">Domanda 1 di 5</span>
+            <span class="hint-flip">Tocca per girare 🔄</span>
+          </div>
+          <div class="card-flipper-container" id="flipper-container">
+            <div class="flashcard-3d" id="flashcard-card">
+              <div class="card-face card-front">
+                <div class="card-header">
+                  <span class="card-tag">DOMANDA</span>
+                  <span class="card-icon">❓</span>
+                </div>
+                <div class="card-content" id="card-question">Domanda qui</div>
+                <div class="card-footer">Tocca per scoprire la risposta</div>
+              </div>
+              <div class="card-face card-back">
+                <div class="card-header">
+                  <span class="card-tag gold">RISPOSTA CHIAVE</span>
+                  <span class="card-icon">💡</span>
+                </div>
+                <div class="card-content" id="card-answer">Risposta qui</div>
+                <div class="card-footer">Tocca per tornare alla domanda</div>
+              </div>
+            </div>
+          </div>
+          <div class="flashcard-nav">
+            <button class="nav-arrow" id="btn-card-prev">‹ Indietro</button>
+            <div class="dots-indicator" id="dots-container"></div>
+            <button class="nav-arrow" id="btn-card-next">Avanti ›</button>
+          </div>
+        </div>
+
+        <!-- Tab 4: Morale del Libro -->
+        <div class="tab-pane" id="tab-moral">
+          <div class="moral-container">
+            <div class="moral-icon-box">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <h3 class="moral-heading">LA MORALE & L'INSEGNAMENTO ETICO</h3>
+            <div class="moral-text-box" id="moral-text"></div>
+          </div>
+        </div>
+
+        <!-- Tab 5: SEZIONE IMPORTA SU NOTION -->
+        <div class="tab-pane" id="tab-notion">
+          <div class="notion-section-banner">
+            <div class="notion-badge-pill">ESPORTAZIONE DIRETTA NOTION & APPLE NOTE</div>
+            <h3>📝 Sezione Importa su Notion</h3>
+            <p>Esporta l'intera opera formattata con titoli H1/H2, riassunto, mappa concettuale a freccia e flashcard interattive pronte da spuntare su Notion.</p>
+          </div>
+
+          <!-- Pulsanti Principali -->
+          <div class="notion-hero-actions">
+            <button class="btn-notion-hero primary" id="btn-tab-copy-notion">
+              <span class="btn-icon">📋</span>
+              <span id="btn-tab-copy-text">Copia Appunti per Notion</span>
+            </button>
+            <button class="btn-notion-hero secondary" id="btn-tab-download-md">
+              <span class="btn-icon">⬇️</span>
+              <span>Scarica File .md</span>
+            </button>
+            <a class="btn-notion-hero tertiary" id="btn-tab-open-notion" href="notion://" target="_blank">
+              <span class="btn-icon">🚀</span>
+              <span>Apri Notion App</span>
+            </a>
+          </div>
+
+          <!-- Mini Tutorial Passo-Passo -->
+          <div class="notion-steps-card">
+            <h4>📖 Guida Rapida: Come importare in 3 passaggi</h4>
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-desc">
+                <strong>Copia gli appunti:</strong> Tocca il pulsante dorato <em>"Copia Appunti per Notion"</em> qui sopra.
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-desc">
+                <strong>Apri Notion:</strong> Apri l'app <strong>Notion</strong> sul tuo iPhone e crea una nuova pagina vuota.
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-desc">
+                <strong>Incolla:</strong> Tieni premuto sullo schermo e tocca <strong>"Incolla"</strong>. Notion trasformerà all'istante il testo in blocchi nativi, titoli H1/H2, riquadri e caselle di spunta!
+              </div>
+            </div>
+          </div>
+
+          <!-- Anteprima del Testo Markdown Formattato -->
+          <div class="notion-code-preview-card">
+            <div class="preview-card-header">
+              <span>Anteprima Testo Markdown Formattato:</span>
+              <button class="btn-select-all" id="btn-tab-select-all">Seleziona tutto</button>
+            </div>
+            <textarea id="tab-notion-textarea" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: SCANNER FOTOCAMERA / RICERCA ISBN -->
+    <div class="bottom-sheet-modal" id="scanner-modal">
+      <div class="sheet-scrim" id="scanner-scrim"></div>
+      <div class="sheet-content">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>ACQUISIZIONE ISBN & SINTESI AI</h3>
+          <button class="close-sheet-btn" id="btn-close-scanner">✕</button>
+        </div>
+
+        <input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none;">
+
+        <div class="mode-toggle">
+          <button class="toggle-btn active" id="btn-mode-camera">📷 Fotocamera</button>
+          <button class="toggle-btn" id="btn-mode-search">🔍 Cerca Manuale</button>
+        </div>
+
+        <!-- Vista Fotocamera -->
+        <div class="scanner-view-container" id="view-camera">
+          <div class="camera-reticle" id="camera-reticle-box">
+            <video id="camera-stream" playsinline webkit-playsinline muted autoplay></video>
+            <div class="reticle-box">
+              <div class="laser-line"></div>
+            </div>
+          </div>
+
+          <div class="camera-action-overlay">
+            <button class="btn-snap-camera" id="btn-trigger-camera">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+              <span>APRI FOTOCAMERA IPHONE</span>
+            </button>
+            <div class="camera-hint-text" id="camera-status-text">
+              Scatta o inquadra il codice a barre ISBN sul retro del libro
+            </div>
+          </div>
+
+          <div class="quick-demo-row">
+            <span>Prova subito:</span>
+            <button class="demo-chip" data-isbn="9788804739500">Calvino</button>
+            <button class="demo-chip" data-isbn="9788845292798">Harari</button>
+            <button class="demo-chip" data-isbn="9788804668237">Orwell</button>
+          </div>
+        </div>
+
+        <!-- Vista Ricerca Manuale -->
+        <div class="search-view-container hidden" id="view-search">
+          <div class="search-input-row">
+            <input type="text" id="manual-search-input" placeholder="Digita titolo, autore o ISBN...">
+            <button id="btn-run-search">Cerca</button>
+          </div>
+          <div class="search-results-list" id="search-results"></div>
+        </div>
+
+        <!-- Anteprima Metadati & Opzioni Generazione AI -->
+        <div class="ai-generation-preview hidden" id="preview-section">
+          <div class="preview-card">
+            <img id="preview-cover" src="" alt="Copertina">
+            <div class="preview-info">
+              <span class="preview-genre" id="preview-genre">GENERE</span>
+              <h4 id="preview-title">Titolo del Libro</h4>
+              <p id="preview-author">Autore • Anno</p>
+              <p class="preview-isbn" id="preview-isbn">ISBN: ...</p>
+            </div>
+          </div>
+
+          <div class="length-selector">
+            <label>DURATA & REGISTRO SINTESI:</label>
+            <div class="length-chips">
+              <button class="chip" data-length="fast">
+                ⚡ Veloce (2 min)
+                <small>4-5 Flashcard</small>
+              </button>
+              <button class="chip" data-length="standard">
+                ⏱ Standard (5 min)
+                <small>8-10 Flashcard</small>
+              </button>
+              <button class="chip active" data-length="deep">
+                🎓 Scolastico (15 min)
+                <small>15-20 Flashcard • Esami</small>
+              </button>
+            </div>
+          </div>
+
+          <button class="btn-generate-ai" id="btn-generate-ai">
+            <span class="btn-icon">✨</span>
+            <span id="btn-generate-text">GENERA SINTESI & CAPITOLI CON GEMINI</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODAL 3: MENU DI CONDIVISIONE / ESPORTAZIONE IOS CON MINI-TUTORIAL -->
+    <div class="bottom-sheet-modal" id="share-modal">
+      <div class="sheet-scrim" id="share-scrim"></div>
+      <div class="sheet-content">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>ESPORTAZIONE & MINI-TUTORIAL IOS</h3>
+          <button class="close-sheet-btn" id="btn-close-share">✕</button>
+        </div>
+
+        <!-- Mini-Tutorial per iPhone (PDF & Notion) -->
+        <div class="mini-tutorial-box">
+          <div class="tutorial-card">
+            <div class="tut-icon">📁</div>
+            <div class="tut-text">
+              <strong>Dove trovo il PDF su iPhone?</strong>
+              <p>Quando tocchi <em>"Esporta PDF"</em>, Safari scarica il documento direttamente nell'app <strong>File</strong> del tuo iPhone, nella cartella <strong>Download</strong> (oppure tocca l'icona della freccia blu ⤓ in alto su Safari).</p>
+            </div>
+          </div>
+          <div class="tutorial-card">
+            <div class="tut-icon">📝</div>
+            <div class="tut-text">
+              <strong>Come importare su Notion in 3 secondi:</strong>
+              <ol>
+                <li>Tocca qui sotto <strong>"Copia per Notion"</strong>.</li>
+                <li>Apri l'app <strong>Notion</strong> e crea una nuova pagina vuota.</li>
+                <li>Tieni premuto sullo schermo e fai <strong>"Incolla"</strong>: titoli, schemi, capitoli e flashcard si impagineranno automaticamente!</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="export-options-list">
+          <div class="export-item" id="opt-share-ios">
+            <div class="export-icon red">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </div>
+            <div class="export-text">
+              <strong>Esporta / Salva PDF (App File)</strong>
+              <span>Genera il PDF formattato salvato nella cartella Download</span>
+            </div>
+          </div>
+          <div class="export-item" id="opt-share-notes">
+            <div class="export-icon gold">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="export-text">
+              <strong>Copia per Notion / Apple Note</strong>
+              <span>Copia il testo Markdown completo formattato</span>
+            </div>
+          </div>
+          <div class="export-item" id="opt-delete-book">
+            <div class="export-icon grey">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+            <div class="export-text">
+              <strong style="color: #ff4d4f;">Rimuovi dalla libreria</strong>
+              <span>Elimina questo libro dallo storage</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 3.5: ESPORTA PER NOTION & MARKDOWN -->
+    <div class="bottom-sheet-modal" id="notion-modal">
+      <div class="sheet-scrim" id="notion-scrim"></div>
+      <div class="sheet-content">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>ESPORTA PER NOTION</h3>
+          <button class="close-sheet-btn" id="btn-close-notion">✕</button>
+        </div>
+
+        <div class="notion-export-body">
+          <div class="notion-status-badge" id="notion-copy-status">
+            ✅ Testo Markdown copiato negli appunti!
+          </div>
+
+          <div class="notion-actions-row">
+            <button class="btn-notion-action primary" id="btn-recopy-notion">
+              📋 Ricopia Appunti
+            </button>
+            <button class="btn-notion-action download" id="btn-download-md">
+              ⬇️ Scarica .md
+            </button>
+            <a class="btn-notion-action open-app" id="btn-open-notion-app" href="notion://" target="_blank">
+              🚀 Apri Notion
+            </a>
+          </div>
+
+          <div class="notion-instructions-box">
+            <h4>Come importare su Notion:</h4>
+            <p><strong>1. Metodo Rapido (Incolla):</strong> Apri l'app <strong>Notion</strong>, crea una pagina vuota, tieni premuto e tocca <strong>"Incolla"</strong>. Tutti i capitoli, i titoli, le citazioni e le flashcard con checkbox si creeranno all'istante.</p>
+            <p><strong>2. Metodo File (.md):</strong> Tocca <strong>"Scarica .md"</strong> (verrà salvato in File/Download su iPhone), poi in Notion tocca i tre puntini <code>•••</code> in alto a destra &gt; <em>Import</em> &gt; <em>Markdown</em> e seleziona il file.</p>
+          </div>
+
+          <div class="notion-preview-box">
+            <div class="notion-preview-header">
+              <span>Anteprima Testo Markdown:</span>
+              <button id="btn-select-all-md">Seleziona tutto</button>
+            </div>
+            <textarea id="notion-md-textarea" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: IMPOSTAZIONI & CHIAVE GEMINI -->
+    <div class="bottom-sheet-modal" id="settings-modal">
+      <div class="sheet-scrim" id="settings-scrim"></div>
+      <div class="sheet-content">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>IMPOSTAZIONI BOOKFLIX BY GFIRE</h3>
+          <button class="close-sheet-btn" id="btn-close-settings">✕</button>
+        </div>
+        <div class="settings-body">
+          <div class="setting-group">
+            <label>Google Gemini API Key:</label>
+            <input type="password" id="input-gemini-key" placeholder="Incolla chiave AIzaSy...">
+            <small>Se lasciata vuota, l'app usa il generatore scolastico offline a tono umano integrato.</small>
+            <button class="btn-save-key" id="btn-save-key">Salva Chiave</button>
+          </div>
+          <div class="setting-group">
+            <label>Libreria di Esempio:</label>
+            <button class="btn-reset-library" id="btn-reset-seed">Ripristina Libri Classici BookFlix by GFire</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
