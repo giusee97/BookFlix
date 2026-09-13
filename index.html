@@ -139,9 +139,28 @@
       <div class="tab-contents">
         <!-- Tab 1: Riassunto & Scheda Completa Netflix -->
         <div class="tab-pane active" id="tab-summary">
+          <!-- Selettore Interattivo Durata Riassunto (2 min / 5 min / 15 min) -->
+          <div class="summary-duration-switcher" id="summary-duration-switcher">
+            <button class="dur-btn" data-len="fast" id="dur-btn-fast">
+              <span class="dur-icon">⚡</span>
+              <span class="dur-title">2 min</span>
+              <span class="dur-badge">Rapida</span>
+            </button>
+            <button class="dur-btn" data-len="standard" id="dur-btn-standard">
+              <span class="dur-icon">⏱️</span>
+              <span class="dur-title">5 min</span>
+              <span class="dur-badge">Standard</span>
+            </button>
+            <button class="dur-btn active" data-len="deep" id="dur-btn-deep">
+              <span class="dur-icon">📖</span>
+              <span class="dur-title">15 min</span>
+              <span class="dur-badge">Approfondita</span>
+            </button>
+          </div>
+
           <div class="summary-top-badges">
-            <span class="reading-time-pill" id="summary-reading-time">📖 Sintesi Approfondita • 15 min</span>
-            <span class="summary-register-tag" id="summary-register-badge">Edizione Integrale & Note di Studio</span>
+            <span class="reading-time-pill" id="summary-reading-time">📖 Riassunto Approfondito • 15 min</span>
+            <span class="summary-register-tag" id="summary-register-badge">Narrazione Completa Fase per Fase</span>
           </div>
 
           <!-- Griglia Scheda Editoriale Netflix -->
