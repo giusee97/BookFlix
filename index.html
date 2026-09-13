@@ -137,11 +137,32 @@
       </div>
 
       <div class="tab-contents">
-        <!-- Tab 1: Riassunto -->
+        <!-- Tab 1: Riassunto & Scheda Completa Netflix -->
         <div class="tab-pane active" id="tab-summary">
-          <div class="reading-time-pill" id="summary-reading-time">⏱ Tempo stimato: 2 min</div>
-          <div class="summary-register-tag" id="summary-register-badge">Registro Scolastico & Accademico</div>
+          <div class="summary-top-badges">
+            <span class="reading-time-pill" id="summary-reading-time">📖 Sintesi Approfondita • 15 min</span>
+            <span class="summary-register-tag" id="summary-register-badge">Edizione Integrale & Note di Studio</span>
+          </div>
+
+          <!-- Griglia Scheda Editoriale Netflix -->
+          <div class="netflix-editorial-card" id="detail-editorial-card"></div>
+
+          <!-- Sezione 1: Sinossi & Trama Estesa -->
+          <div class="netflix-section-heading">
+            <div class="heading-bar"></div>
+            <h3>TRAMA & SINOSSI ESTESA</h3>
+          </div>
           <div class="summary-body" id="summary-text"></div>
+
+          <!-- Sezione 2: Punti Chiave & Temi Principali -->
+          <div class="netflix-section-heading">
+            <div class="heading-bar gold"></div>
+            <h3>PUNTI CHIAVE & TEMI PRINCIPALI</h3>
+          </div>
+          <div class="themes-grid-cards" id="summary-themes-container"></div>
+
+          <!-- Sezione 3: Biografia Autore & Contesto -->
+          <div class="author-bio-card" id="author-bio-container"></div>
         </div>
 
         <!-- Tab 2: Mappa Concettuale dei Capitoli -->
@@ -281,30 +302,46 @@
           <button class="toggle-btn" id="btn-mode-search">🔍 Cerca Manuale</button>
         </div>
 
-        <!-- Vista Fotocamera -->
+        <!-- Vista Fotocamera Live Instantanea Stile QR -->
         <div class="scanner-view-container" id="view-camera">
-          <div class="camera-reticle" id="camera-reticle-box">
+          <div class="live-scanner-viewport" id="camera-reticle-box">
             <video id="camera-stream" playsinline webkit-playsinline muted autoplay></video>
-            <div class="reticle-box">
-              <div class="laser-line"></div>
+            
+            <!-- Mirino scanner continuo con angoli e raggio laser -->
+            <div class="scanner-reticle-frame" id="scanner-reticle-frame">
+              <div class="reticle-corner top-left"></div>
+              <div class="reticle-corner top-right"></div>
+              <div class="reticle-corner bottom-left"></div>
+              <div class="reticle-corner bottom-right"></div>
+              <div class="laser-beam" id="scanner-laser-beam"></div>
+              <div class="reticle-detected-badge" id="reticle-badge">✓ ISBN RICONOSCIUTO!</div>
             </div>
           </div>
 
-          <div class="camera-action-overlay">
-            <button class="btn-snap-camera" id="btn-trigger-camera">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-              <span>APRI FOTOCAMERA IPHONE</span>
-            </button>
-            <div class="camera-hint-text" id="camera-status-text">
-              Scatta o inquadra il codice a barre ISBN sul retro del libro
+          <div class="scanner-status-card">
+            <div class="scanner-live-badge">
+              <span class="live-dot"></span>
+              <span>MIRINO SCANNER ATTIVO</span>
             </div>
+            <div class="camera-hint-text" id="camera-status-text">
+              Inquadra il codice a barre ISBN sul retro del libro: riconoscimento automatico istantaneo.
+            </div>
+          </div>
+
+          <div class="scanner-bottom-actions">
+            <button class="btn-gallery-fallback" id="btn-trigger-camera">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Oppure carica foto da galleria</span>
+            </button>
           </div>
 
           <div class="quick-demo-row">
-            <span>Prova subito:</span>
+            <span>Prova codice al volo:</span>
+            <button class="demo-chip" data-isbn="9788868369323">Geda</button>
             <button class="demo-chip" data-isbn="9788804739500">Calvino</button>
-            <button class="demo-chip" data-isbn="9788845292798">Harari</button>
             <button class="demo-chip" data-isbn="9788804668237">Orwell</button>
+            <button class="demo-chip" data-isbn="9788845292798">Harari</button>
+            <button class="demo-chip" data-isbn="9788851172411">Clear</button>
           </div>
         </div>
 

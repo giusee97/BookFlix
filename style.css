@@ -1700,3 +1700,366 @@ body {
 }
 
 .hidden { display: none !important; }
+
+
+/* =======================================================
+   LIVE INSTANT BARCODE SCANNER (QR-STYLE)
+   ======================================================= */
+.scanner-view-container {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  padding-bottom: 12px;
+}
+
+.live-scanner-viewport {
+  width: 100%;
+  height: 270px;
+  position: relative;
+  background: #0a0a0a;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.9);
+}
+
+#camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scanner-reticle-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 78%;
+  max-width: 320px;
+  height: 135px;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.scanner-reticle-frame.detected {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65), 0 0 35px rgba(0, 230, 118, 0.8);
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.reticle-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: var(--netflix-red);
+  border-style: solid;
+  transition: border-color 0.25s ease;
+}
+
+.scanner-reticle-frame.detected .reticle-corner {
+  border-color: #00E676 !important;
+}
+
+.reticle-corner.top-left {
+  top: 0;
+  left: 0;
+  border-width: 3.5px 0 0 3.5px;
+  border-top-left-radius: 12px;
+}
+
+.reticle-corner.top-right {
+  top: 0;
+  right: 0;
+  border-width: 3.5px 3.5px 0 0;
+  border-top-right-radius: 12px;
+}
+
+.reticle-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 3.5px 3.5px;
+  border-bottom-left-radius: 12px;
+}
+
+.reticle-corner.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3.5px 3.5px 0;
+  border-bottom-right-radius: 12px;
+}
+
+.laser-beam {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #E50914, #ff5252, #E50914, transparent);
+  box-shadow: 0 0 12px #E50914, 0 0 24px rgba(229, 9, 20, 0.7);
+  animation: scanLaserBeam 1.6s ease-in-out infinite alternate;
+  border-radius: 2px;
+}
+
+.scanner-reticle-frame.detected .laser-beam {
+  background: #00E676;
+  box-shadow: 0 0 16px #00E676;
+  animation: none;
+  top: 50% !important;
+}
+
+@keyframes scanLaserBeam {
+  0% { top: 8%; opacity: 0.85; }
+  100% { top: 90%; opacity: 1; }
+}
+
+.reticle-detected-badge {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #00E676;
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  padding: 8px 18px;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 230, 118, 0.6);
+  white-space: nowrap;
+}
+
+.scanner-reticle-frame.detected .reticle-detected-badge {
+  display: block;
+  animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.scanner-status-card {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--surface-color);
+  border-radius: 10px;
+  border: 1px solid var(--divider-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.scanner-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(229, 9, 20, 0.15);
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ff5252;
+  letter-spacing: 0.8px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--netflix-red);
+  box-shadow: 0 0 8px var(--netflix-red);
+  animation: blinkPulse 1.2s infinite;
+}
+
+@keyframes blinkPulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.75); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.scanner-bottom-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-gallery-fallback {
+  background: transparent;
+  border: 1px solid var(--divider-color);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-gallery-fallback:active {
+  background: var(--card-color);
+  color: white;
+}
+
+/* =======================================================
+   SCHEDA EDITORIALE DETTAGLIATA STILE NETFLIX
+   ======================================================= */
+.summary-top-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.netflix-editorial-card {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 22px;
+  backdrop-filter: blur(10px);
+}
+
+@media (min-width: 480px) {
+  .netflix-editorial-card {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.editorial-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editorial-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold-accent);
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
+
+.editorial-val {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+}
+
+.netflix-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 14px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.netflix-section-heading .heading-bar {
+  width: 4px;
+  height: 18px;
+  background: var(--netflix-red);
+  border-radius: 2px;
+}
+
+.netflix-section-heading .heading-bar.gold {
+  background: var(--gold-accent);
+}
+
+.netflix-section-heading h3 {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.themes-grid-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.theme-card {
+  background: var(--card-color);
+  border: 1px solid var(--divider-color);
+  border-left: 4px solid var(--gold-accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.theme-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.theme-card-icon {
+  font-size: 16px;
+}
+
+.theme-card-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.theme-card-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.theme-card-takeaway {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.author-bio-card {
+  background: rgba(229, 9, 20, 0.05);
+  border: 1px solid rgba(229, 9, 20, 0.25);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+}
+
+.author-bio-card h4 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.author-bio-card p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
